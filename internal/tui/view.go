@@ -21,7 +21,7 @@ func (m *Model) View() string {
 	m.at.tabX = m.at.tabX[:0]
 	x := 0
 	for i, t := range m.tabs {
-		s := " " + t + " "
+		s := " " + clean(t) + " "
 		m.at.tabX = append(m.at.tabX, x)
 		x += len([]rune(s)) + 1
 		if i == m.tab {
@@ -33,7 +33,7 @@ func (m *Model) View() string {
 	b.WriteString(dim.Render(fmt.Sprintf("  data %s · auto %ds · r refresh", m.snapAt.Format("15:04:05"), int(refreshEvery.Seconds()))))
 	out = append(out, b.String())
 	if len(m.errs) > 0 {
-		out = append(out, errS.Render(trunc(strings.Join(m.errs, " · "), m.w)))
+		out = append(out, errS.Render(trunc(clean(strings.Join(m.errs, " · ")), m.w)))
 	}
 
 	scope := "all contexts"

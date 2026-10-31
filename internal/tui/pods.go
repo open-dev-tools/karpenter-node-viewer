@@ -62,7 +62,7 @@ func (m *Model) detailView() string {
 			n.CPUReq, n.CPUAlloc, n.CPUPct*100, n.MemReq/(1<<30), n.MemAlloc/(1<<30), n.MemPct*100, len(d.rows)),
 	}
 	if n.Why != "" {
-		out = append(out, warn.Render("  why not consolidated: "+n.Why))
+		out = append(out, warn.Render("  why not consolidated: "+clean(n.Why)))
 	}
 	out = append(out, "")
 	footer := m.help.View(detailKeys)

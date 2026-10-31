@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -97,6 +98,18 @@ func age(t time.Time) string {
 	return fmt.Sprintf("%dm", int(d.Minutes()))
 }
 
+// clean replaces control and bidi-control runes with '?'. Text shown here comes from the cluster
+// (event messages, node and pod names, API errors) or the kubeconfig (context names); unfiltered,
+// it could move the cursor, rewrite the screen, set the window title or clipboard, or reorder text.
+func clean(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) || unicode.Is(unicode.Bidi_Control, r) {
+			return '?'
+		}
+		return r
+	}, s)
+}
+
 // pick drops the columns whose titles are in hide (columns implied by the current selection).
 func pick[T any](cols []col[T], hide ...string) []col[T] {
 	return slices.DeleteFunc(slices.Clone(cols), func(c col[T]) bool { return slices.Contains(hide, c.title) })
@@ -148,6 +161,7 @@ func renderTable[T any](cols []col[T], rows []T, sortBy string, desc bool, cur, 
 		all[r] = make([]cell, len(cols))
 		for i, c := range cols {
 			all[r][i] = c.cell(row)
+			all[r][i].s = clean(all[r][i].s)
 			if !c.flex {
 				widths[i] = max(widths[i], len([]rune(all[r][i].s)))
 			}
@@ -231,6 +245,7 @@ func trunc(s string, w int) string {
 
 // section is the colored title bar above a table. The focused table's bar uses the accent color.
 func section(w int, on bool, left, right string) string {
+	left, right = clean(left), clean(right)
 	st := grayBar
 	if on {
 		st = accentBar
