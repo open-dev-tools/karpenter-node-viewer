@@ -53,7 +53,7 @@ func main() {
 	for _, t := range targets {
 		ctxs = append(ctxs, cluster.Start(ctx, *kubeconfig, t))
 	}
-	if _, err := tea.NewProgram(tui.New(ctxs), tea.WithAltScreen()).Run(); err != nil {
+	if _, err := tea.NewProgram(tui.New(ctxs), tea.WithAltScreen(), tea.WithMouseCellMotion()).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "knv:", err)
 		os.Exit(1)
 	}

@@ -44,6 +44,7 @@ type Model struct {
 
 	w, h int
 	help help.Model
+	at   layout
 }
 
 // New returns a model over already started contexts.
@@ -193,6 +194,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.snapshot()
 		}
 		return m, tick()
+	case tea.MouseMsg:
+		m.onMouse(msg)
 	case tea.KeyMsg:
 		if m.detail != nil {
 			if m.onDetailKey(msg) {

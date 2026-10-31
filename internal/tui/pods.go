@@ -57,7 +57,7 @@ func (m *Model) detailView() string {
 		price = fmt.Sprintf("$%.4f/h", n.Price)
 	}
 	out := []string{
-		section(m.w, true, fmt.Sprintf(" PODS · %s / %s · %s · %s · %s · %s %s", n.Ctx, n.Name, n.Pool, n.InstanceType, n.Capacity, price, n.State), "esc: close "),
+		section(m.w, true, fmt.Sprintf(" PODS · %s / %s · %s · %s · %s · %s %s", n.Ctx, n.Name, n.Pool, n.InstanceType, n.Capacity, price, n.State), "esc / click: close "),
 		fmt.Sprintf("  CPU %.2f / %.2f (%.0f%%)   MEM %.1f / %.1f Gi (%.0f%%)   pods %d",
 			n.CPUReq, n.CPUAlloc, n.CPUPct*100, n.MemReq/(1<<30), n.MemAlloc/(1<<30), n.MemPct*100, len(d.rows)),
 	}

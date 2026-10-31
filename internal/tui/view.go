@@ -18,13 +18,18 @@ func (m *Model) View() string {
 
 	// context tabs
 	var b strings.Builder
+	m.at.tabX = m.at.tabX[:0]
+	x := 0
 	for i, t := range m.tabs {
 		s := " " + t + " "
+		m.at.tabX = append(m.at.tabX, x)
+		x += len([]rune(s)) + 1
 		if i == m.tab {
 			s = accentBar.Render(s)
 		}
 		b.WriteString(s + dim.Render("│"))
 	}
+	m.at.tabX = append(m.at.tabX, x)
 	b.WriteString(dim.Render(fmt.Sprintf("  data %s · auto %ds · r refresh", m.snapAt.Format("15:04:05"), int(refreshEvery.Seconds()))))
 	out = append(out, b.String())
 	if len(m.errs) > 0 {
@@ -51,6 +56,7 @@ func (m *Model) View() string {
 	avail := m.h - len(out) - lipgloss.Height(footer) - 5 // 2 title bars + 2 header lines + 1 blank
 	rows := [2]int{min(len(m.pools), max(3, avail/3)), 0}
 	rows[1] = max(1, avail-rows[0])
+	m.at.rows = rows
 	for t := range 2 {
 		if m.cur[t] < m.off[t] {
 			m.off[t] = m.cur[t]
@@ -63,8 +69,10 @@ func (m *Model) View() string {
 
 	out = append(out, section(m.w, m.focus == 0,
 		fmt.Sprintf(" NODEPOOLS · %s · %d pools", scope, len(m.pools)-1),
-		"↑↓: pick a pool → its nodes below · $ = list price, no SP/RI "))
-	lines, _ := renderTable(pc, m.pools, m.sortBy[0], m.desc[0], m.cur[0], m.off[0], rows[0], m.w, m.focus == 0)
+		"↑↓ / click: pick a pool → its nodes below · $ = list price, no SP/RI "))
+	m.at.tableY[0] = len(out)
+	lines, xs := renderTable(pc, m.pools, m.sortBy[0], m.desc[0], m.cur[0], m.off[0], rows[0], m.w, m.focus == 0)
+	m.at.colX[0] = xs
 	out = append(out, lines...)
 	out = append(out, "")
 
@@ -81,8 +89,10 @@ func (m *Model) View() string {
 			title += fmt.Sprintf("consolidationPolicy=%s consolidateAfter=%s budget=%s", sel.Spec.Policy, sel.Spec.After, sel.Spec.Budget)
 		}
 	}
-	out = append(out, section(m.w, m.focus == 1, title, "enter: pods on node "))
-	lines, _ = renderTable(nc, m.nodes, m.sortBy[1], m.desc[1], m.cur[1], m.off[1], rows[1], m.w, m.focus == 1)
+	out = append(out, section(m.w, m.focus == 1, title, "enter / click: pods on node "))
+	m.at.tableY[1] = len(out)
+	lines, xs = renderTable(nc, m.nodes, m.sortBy[1], m.desc[1], m.cur[1], m.off[1], rows[1], m.w, m.focus == 1)
+	m.at.colX[1] = xs
 	out = append(out, lines...)
 	out = append(out, footer)
 	return strings.Join(out, "\n")
