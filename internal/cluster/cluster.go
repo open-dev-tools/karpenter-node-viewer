@@ -8,6 +8,7 @@ import (
 	"context"
 	"slices"
 	"sort"
+	"sync"
 
 	awscfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/awslabs/eks-node-viewer/pkg/aws"
@@ -66,14 +67,19 @@ type Context struct {
 
 	kube *kubernetes.Clientset
 	karp *rest.RESTClient // karpenter.sh/v1
-	err  error
+	kick chan struct{}
+
+	mu    sync.Mutex
+	specs map[string]PoolSpec // NodePool name -> disruption settings
+	why   map[string]string   // node name -> latest consolidation blocker
+	err   error
 }
 
 // Start connects to t and starts watching nodes, pods and NodeClaims.
 // A connection error is kept on the returned Context instead of aborting,
 // so one broken context does not hide the others.
 func Start(ctx context.Context, kubeconfig string, t Target) *Context {
-	k := &Context{Name: t.Name, Cluster: model.NewCluster()}
+	k := &Context{Name: t.Name, Cluster: model.NewCluster(), kick: make(chan struct{}, 1)}
 	var err error
 	if k.kube, err = client.NewKubernetes(kubeconfig, t.Name); err == nil {
 		k.karp, err = client.NewNodeClaims(kubeconfig, t.Name)
@@ -99,8 +105,6 @@ func Start(ctx context.Context, kubeconfig string, t Target) *Context {
 	holder := model.NewUIModel(nil, "creation", style)
 	k.Cluster = holder.Cluster()
 	client.NewController(k.kube, k.karp, holder, labels.Everything(), pricing).Start(ctx)
+	go k.poll(ctx)
 	return k
 }
-
-// Err returns the error that kept this context from connecting, if any.
-func (k *Context) Err() error { return k.err }
