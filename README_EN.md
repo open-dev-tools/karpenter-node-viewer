@@ -75,7 +75,7 @@ The footer shows short help; `?` shows all of it.
 | NODES→FIT | nodes now → nodes needed if the requests were packed perfectly onto average-sized nodes (a lower bound). Affinity, topology spread, PDBs and do-not-disrupt are not considered yet ([v0.2](ROADMAP.md#v02--추정-정확도)) |
 | SAVE≈/MO | (NODES − FIT) × average node price × 730h |
 | IDLE/MO | node price × (1 − max(CPU, MEM)) × 730h |
-| WHY NOT CONSOLIDATED | latest message of Karpenter's `Unconsolidatable` / `DisruptionBlocked` events; the pool table shows the most common reason and how many nodes have it |
+| WHY NOT CONSOLIDATED | latest message of the `Unconsolidatable` / `DisruptionBlocked` events Karpenter reported; the pool table shows the most common reason and how many nodes have it. An event's reporter fields are written by its author, not authenticated: a principal that can create Events in `default` can impersonate Karpenter |
 | $ | list price; Savings Plans and RIs are not applied. Fargate nodes show `?` (their size comes from a pod annotation, so it is not trusted) |
 
 ## How it works

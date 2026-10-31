@@ -75,7 +75,7 @@ footer 에 짧은 도움말, `?` 로 전체 도움말.
 | NODES→FIT | 지금 노드 수 → 요청을 평균 크기 노드에 빈틈없이 채웠을 때 필요한 수 (하한). affinity · topology spread · PDB · do-not-disrupt 는 아직 보지 않는다 ([v0.2](ROADMAP.md#v02--추정-정확도)) |
 | SAVE≈/MO | (NODES − FIT) × 평균 노드 가격 × 730h |
 | IDLE/MO | 노드 가격 × (1 − max(CPU, MEM)) × 730h |
-| WHY NOT CONSOLIDATED | Karpenter `Unconsolidatable` · `DisruptionBlocked` 이벤트의 최근 메시지. NodePool 표는 가장 많은 사유와 노드 수 |
+| WHY NOT CONSOLIDATED | Karpenter 가 보고한 `Unconsolidatable` · `DisruptionBlocked` 이벤트의 최근 메시지. NodePool 표는 가장 많은 사유와 노드 수. 이벤트의 보고자 필드는 작성자가 쓰는 값이라 인증이 아니다 — `default` 에 Event 를 만들 수 있는 주체는 Karpenter 를 사칭할 수 있다 |
 | $ | list price. Savings Plans · RI 미반영. Fargate 노드는 `?` (파드 annotation 으로 정해지는 값이라 쓰지 않는다) |
 
 ## 동작 방식
