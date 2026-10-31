@@ -41,6 +41,7 @@ type Model struct {
 	colTitles             [2][]string // visible columns, for "s"
 
 	detail *podsView // pods of one node, when open
+	cmd    tea.Cmd   // command produced by key or mouse handling, returned from Update
 
 	w, h int
 	help help.Model
@@ -194,6 +195,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.snapshot()
 		}
 		return m, tick()
+	case podsMsg:
+		m.onPods(msg)
 	case tea.MouseMsg:
 		m.onMouse(msg)
 	case tea.KeyMsg:
@@ -205,7 +208,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	}
-	return m, nil
+	cmd := m.cmd
+	m.cmd = nil
+	return m, cmd
 }
 
 func (m *Model) onKey(msg tea.KeyMsg) (quit bool) {
@@ -228,7 +233,7 @@ func (m *Model) onKey(msg tea.KeyMsg) (quit bool) {
 		if m.focus == 0 {
 			m.focus = 1
 		} else {
-			m.openPods()
+			m.cmd = m.openPods()
 		}
 	case key.Matches(msg, keys.Sort):
 		if ts := m.colTitles[m.focus]; len(ts) > 0 {

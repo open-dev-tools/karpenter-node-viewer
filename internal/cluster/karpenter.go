@@ -140,3 +140,25 @@ func or(s string) string {
 	}
 	return s
 }
+
+// PodsOnNode lists the non-terminal pods bound to node, straight from the API server. The pods view uses it
+// instead of eks-node-viewer's Node.Pods(), which iterates the node's pod map without the node lock while
+// informers write it (a concurrent write aborts the process with a fatal runtime error).
+func (k *Context) PodsOnNode(ctx context.Context, node string) ([]v1.Pod, error) {
+	if k.kube == nil {
+		return nil, k.err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	list, err := k.kube.CoreV1().Pods("").List(ctx, metav1.ListOptions{FieldSelector: "spec.nodeName=" + node})
+	if err != nil {
+		return nil, fmt.Errorf("pods on %s: %w", node, err)
+	}
+	var out []v1.Pod
+	for _, p := range list.Items {
+		if p.Status.Phase != v1.PodSucceeded && p.Status.Phase != v1.PodFailed {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}

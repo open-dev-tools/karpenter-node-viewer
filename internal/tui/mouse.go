@@ -63,7 +63,7 @@ func (m *Model) onMouse(msg tea.MouseMsg) {
 		m.focus, m.cur[table] = table, row
 		if table == 1 {
 			m.pin()
-			m.openPods()
+			m.cmd = m.openPods()
 		}
 	}
 	m.pin()

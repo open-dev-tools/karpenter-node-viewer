@@ -1,7 +1,7 @@
 // Package snapshot freezes the live cluster state into NodePool and node rows.
 //
-// Taking a snapshot is the only place knv reads the clusters; everything the screen does between
-// snapshots (cursor, sort, filter) works on these rows, so rows do not move under the cursor.
+// Apart from the pods view, which lists one node's pods on demand, taking a snapshot is the only place
+// knv reads cluster state; cursor, sort and filter work on these rows, so rows do not move under the cursor.
 package snapshot
 
 import (
@@ -30,8 +30,6 @@ type Node struct {
 	Price, Idle                                        float64 // $/h and idle $/month; NaN when the price is unknown
 	Pods                                               int
 	Created                                            time.Time
-
-	live *model.Node
 }
 
 // Pool is one NodePool (or managed node group) in one context.
@@ -197,7 +195,7 @@ func newNode(ctx string, n *model.Node, why map[string]string) *Node {
 		itype = string(n.InstanceType())
 	}
 	r := &Node{Ctx: ctx, Name: n.Name(), Pool: or(pool), InstanceType: or(itype), Capacity: "?",
-		Pods: n.NumPods(), Created: n.Created(), Price: math.NaN(), Idle: math.NaN(), live: n}
+		Pods: n.NumPods(), Created: n.Created(), Price: math.NaN(), Idle: math.NaN()}
 	r.Why, r.WhyKind = shortWhy(why[n.Name()])
 	switch {
 	case n.IsSpot():
@@ -230,12 +228,13 @@ type Pod struct {
 	CPU, Mem        float64
 }
 
-// PodList returns the pods on the node now (read live, not from the snapshot).
-func (n *Node) PodList() []Pod {
-	var out []Pod
-	for _, p := range n.live.Pods() {
-		req := p.Requested()
-		out = append(out, Pod{p.Namespace(), p.Name(), res(req, v1.ResourceCPU), res(req, v1.ResourceMemory)})
+// PodsFrom turns pods listed from the API server into rows with their requests, counted the same way
+// eks-node-viewer counts them for the node totals.
+func PodsFrom(pods []v1.Pod) []Pod {
+	out := make([]Pod, 0, len(pods))
+	for i := range pods {
+		req := model.NewPod(&pods[i]).Requested()
+		out = append(out, Pod{pods[i].Namespace, pods[i].Name, res(req, v1.ResourceCPU), res(req, v1.ResourceMemory)})
 	}
 	return out
 }

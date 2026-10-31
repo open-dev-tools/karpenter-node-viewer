@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strings"
@@ -9,14 +10,23 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/open-dev-tools/karpenter-node-viewer/internal/cluster"
 	"github.com/open-dev-tools/karpenter-node-viewer/internal/snapshot"
 )
 
 // podsView lists the pods on one node, largest CPU request first.
 type podsView struct {
+	node    *snapshot.Node
+	rows    []snapshot.Pod
+	loading bool
+	err     error
+	off     int
+}
+
+type podsMsg struct {
 	node *snapshot.Node
 	rows []snapshot.Pod
-	off  int
+	err  error
 }
 
 var podCols = []col[snapshot.Pod]{
@@ -26,14 +36,34 @@ var podCols = []col[snapshot.Pod]{
 	{title: "MEM Gi", key: func(p snapshot.Pod) float64 { return p.Mem }, cell: func(p snapshot.Pod) cell { return num(fmt.Sprintf("%.2f", p.Mem/(1<<30))) }},
 }
 
-func (m *Model) openPods() {
+// openPods opens the pods view and returns a command that lists the node's pods from the API server.
+func (m *Model) openPods() tea.Cmd {
 	if len(m.nodes) == 0 {
-		return
+		return nil
 	}
 	n := m.nodes[m.cur[1]]
-	rows := n.PodList()
-	sortRows(podCols, rows, "CPU", true)
-	m.detail = &podsView{node: n, rows: rows}
+	m.detail = &podsView{node: n, loading: true}
+	var k *cluster.Context
+	for _, c := range m.ctxs {
+		if c.Name == n.Ctx {
+			k = c
+		}
+	}
+	return func() tea.Msg {
+		if k == nil {
+			return podsMsg{node: n, err: fmt.Errorf("context %s not found", n.Ctx)}
+		}
+		pods, err := k.PodsOnNode(context.Background(), n.Name)
+		rows := snapshot.PodsFrom(pods)
+		sortRows(podCols, rows, "CPU", true)
+		return podsMsg{node: n, rows: rows, err: err}
+	}
+}
+
+func (m *Model) onPods(msg podsMsg) {
+	if m.detail != nil && m.detail.node == msg.node {
+		m.detail.rows, m.detail.err, m.detail.loading = msg.rows, msg.err, false
+	}
 }
 
 func (m *Model) onDetailKey(msg tea.KeyMsg) (quit bool) {
@@ -63,6 +93,12 @@ func (m *Model) detailView() string {
 	}
 	if n.Why != "" {
 		out = append(out, warn.Render("  why not consolidated: "+clean(n.Why)))
+	}
+	switch {
+	case d.loading:
+		out = append(out, dim.Render("  loading pods from the API server…"))
+	case d.err != nil:
+		out = append(out, errS.Render(trunc("  "+clean(d.err.Error()), m.w)))
 	}
 	out = append(out, "")
 	footer := m.help.View(detailKeys)
