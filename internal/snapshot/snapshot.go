@@ -152,7 +152,7 @@ func fit(n int, cpuAlloc, cpuReq, memAlloc, memReq float64) int {
 		return n
 	}
 	need := math.Max(cpuReq/(cpuAlloc/float64(n)), memReq/(memAlloc/float64(n)))
-	return min(n, int(math.Ceil(need-1e-9)))
+	return max(0, min(n, int(math.Ceil(need-1e-9))))
 }
 
 // save is the monthly saving of shrinking the pool to fit nodes, at the pool's average node price.
@@ -214,6 +214,13 @@ func newNode(ctx string, n *model.Node, why map[string]string) *Node {
 	alloc, used := n.Allocatable(), n.Used()
 	r.CPUAlloc, r.CPUReq = res(alloc, v1.ResourceCPU), res(used, v1.ResourceCPU)
 	r.MemAlloc, r.MemReq = res(alloc, v1.ResourceMemory), res(used, v1.ResourceMemory)
+	// eks-node-viewer adds a pod's requests when it is first bound and subtracts its current requests when
+	// it goes away, so an in-place resize leaves a residue that can be negative. Never show negative
+	// requests, and a node with no pods requests nothing.
+	if r.Pods == 0 {
+		r.CPUReq, r.MemReq = 0, 0
+	}
+	r.CPUReq, r.MemReq = math.Max(0, r.CPUReq), math.Max(0, r.MemReq)
 	r.CPUPct, r.MemPct = ratio(r.CPUReq, r.CPUAlloc), ratio(r.MemReq, r.MemAlloc)
 	if n.HasPrice() {
 		r.Price = n.Price

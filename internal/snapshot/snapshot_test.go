@@ -18,6 +18,9 @@ func TestFitAndSave(t *testing.T) {
 	if got := fit(4, 16, 8, 64, 8); got != 2 {
 		t.Fatalf("exact fit = %d", got)
 	}
+	if got := fit(2, 8, -4, 32, -1); got != 0 {
+		t.Fatalf("negative requests fit = %d", got)
+	}
 	if got := fit(2, 8, 0, 32, 0); got != 0 {
 		t.Fatalf("empty fit = %d", got)
 	}
