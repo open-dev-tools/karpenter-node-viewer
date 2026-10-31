@@ -95,16 +95,31 @@ func (k *Context) fetch(ctx context.Context) (map[string]PoolSpec, map[string]st
 	if err != nil {
 		return nil, nil, fmt.Errorf("events: %w", err)
 	}
+	return specs, latestBlockers(evs.Items, time.Now()), nil
+}
+
+// latestBlockers returns, per node name, the message of the newest consolidation blocker that Karpenter
+// reported. Anyone allowed to create Events in default can post one with any reason, so events from other
+// reporters, empty messages and author-supplied timestamps later than now (which would otherwise stay
+// "newest" for the event's lifetime) are not trusted.
+func latestBlockers(items []v1.Event, now time.Time) map[string]string {
 	why, seen := map[string]string{}, map[string]time.Time{}
-	for _, e := range evs.Items {
+	for _, e := range items {
 		if e.Reason != "Unconsolidatable" && e.Reason != "DisruptionBlocked" {
 			continue
 		}
-		if t := eventTime(e); t.After(seen[e.InvolvedObject.Name]) {
+		if e.Message == "" || (e.Source.Component != "karpenter" && e.ReportingController != "karpenter") {
+			continue
+		}
+		t := eventTime(e)
+		if t.After(now) {
+			t = e.CreationTimestamp.Time // server-assigned
+		}
+		if t.After(seen[e.InvolvedObject.Name]) {
 			seen[e.InvolvedObject.Name], why[e.InvolvedObject.Name] = t, e.Message
 		}
 	}
-	return specs, why, nil
+	return why
 }
 
 func eventTime(e v1.Event) time.Time {
