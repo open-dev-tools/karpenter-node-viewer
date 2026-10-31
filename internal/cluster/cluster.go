@@ -6,6 +6,7 @@ package cluster
 
 import (
 	"context"
+	"math"
 	"slices"
 	"sort"
 	"sync"
@@ -14,6 +15,7 @@ import (
 	"github.com/awslabs/eks-node-viewer/pkg/aws"
 	"github.com/awslabs/eks-node-viewer/pkg/client"
 	"github.com/awslabs/eks-node-viewer/pkg/model"
+	nvp "github.com/awslabs/eks-node-viewer/pkg/pricing"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -104,7 +106,20 @@ func Start(ctx context.Context, kubeconfig string, t Target) *Context {
 	style, _ := model.ParseStyle("#04b575,#ffff00,#ff0000") // constant input, cannot fail
 	holder := model.NewUIModel(nil, "creation", style)
 	k.Cluster = holder.Cluster()
-	client.NewController(k.kube, k.karp, holder, labels.Everything(), pricing).Start(ctx)
+	client.NewController(k.kube, k.karp, holder, labels.Everything(), noFargate{pricing}).Start(ctx)
 	go k.poll(ctx)
 	return k
+}
+
+// noFargate keeps Fargate nodes away from eks-node-viewer's pricing. That path parses the
+// CapacityProvisioned annotation of the node's only pod, which the pod's owner can write: a
+// malformed value panics (eks-node-viewer v0.7.4 pkg/model/pod.go) and any number is priced as given.
+// Fargate nodes are shown with an unknown price instead.
+type noFargate struct{ nvp.Provider }
+
+func (p noFargate) NodePrice(n *model.Node) (float64, bool) {
+	if n.IsFargate() {
+		return math.NaN(), false
+	}
+	return p.Provider.NodePrice(n)
 }

@@ -192,7 +192,11 @@ func newNode(ctx string, n *model.Node, why map[string]string) *Node {
 	if ng := lb["eks.amazonaws.com/nodegroup"]; pool == "" && ng != "" {
 		pool = "mng/" + ngSuffix.ReplaceAllString(ng, "")
 	}
-	r := &Node{Ctx: ctx, Name: n.Name(), Pool: or(pool), InstanceType: or(string(n.InstanceType())), Capacity: "?",
+	itype := "Fargate" // InstanceType() would parse a pod-writable annotation for Fargate nodes; see cluster.noFargate
+	if !n.IsFargate() {
+		itype = string(n.InstanceType())
+	}
+	r := &Node{Ctx: ctx, Name: n.Name(), Pool: or(pool), InstanceType: or(itype), Capacity: "?",
 		Pods: n.NumPods(), Created: n.Created(), Price: math.NaN(), Idle: math.NaN(), live: n}
 	r.Why, r.WhyKind = shortWhy(why[n.Name()])
 	switch {
