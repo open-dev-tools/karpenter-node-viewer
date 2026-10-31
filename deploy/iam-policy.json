@@ -1,0 +1,11 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "KnvPricing",
+      "Effect": "Allow",
+      "Action": ["pricing:GetProducts", "ec2:DescribeSpotPriceHistory"],
+      "Resource": "*"
+    }
+  ]
+}

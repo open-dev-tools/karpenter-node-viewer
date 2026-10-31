@@ -1,0 +1,26 @@
+# Minimum Kubernetes permissions for knv. Everything is read-only.
+# Bindings are left out because subjects differ per cluster (an EKS access entry group, a user, ...).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: knv-viewer
+rules:
+  - apiGroups: [""]
+    resources: [nodes, pods] # eks-node-viewer watches (pods in every namespace)
+    verbs: [list, watch]
+  - apiGroups: [karpenter.sh]
+    resources: [nodeclaims] # eks-node-viewer watch
+    verbs: [list, watch]
+  - apiGroups: [karpenter.sh]
+    resources: [nodepools] # knv: disruption settings
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: knv-events
+  namespace: default # Karpenter records Node events in the default namespace
+rules:
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [list]
