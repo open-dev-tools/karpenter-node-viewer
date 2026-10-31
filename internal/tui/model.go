@@ -40,6 +40,8 @@ type Model struct {
 	errs                  []string
 	colTitles             [2][]string // visible columns, for "s"
 
+	detail *podsView // pods of one node, when open
+
 	w, h int
 	help help.Model
 }
@@ -192,7 +194,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tick()
 	case tea.KeyMsg:
-		if m.onKey(msg) {
+		if m.detail != nil {
+			if m.onDetailKey(msg) {
+				return m, tea.Quit
+			}
+		} else if m.onKey(msg) {
 			return m, tea.Quit
 		}
 	}
@@ -216,7 +222,11 @@ func (m *Model) onKey(msg tea.KeyMsg) (quit bool) {
 	case key.Matches(msg, keys.Down):
 		m.cur[m.focus]++
 	case key.Matches(msg, keys.Enter):
-		m.focus = 1
+		if m.focus == 0 {
+			m.focus = 1
+		} else {
+			m.openPods()
+		}
 	case key.Matches(msg, keys.Sort):
 		if ts := m.colTitles[m.focus]; len(ts) > 0 {
 			m.setSort(m.focus, ts[(slices.Index(ts, m.sortBy[m.focus])+1)%len(ts)])

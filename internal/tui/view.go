@@ -11,6 +11,9 @@ func (m *Model) View() string {
 	if m.w == 0 || len(m.pools) == 0 {
 		return "loading…"
 	}
+	if m.detail != nil {
+		return m.detailView()
+	}
 	var out []string
 
 	// context tabs
@@ -78,7 +81,7 @@ func (m *Model) View() string {
 			title += fmt.Sprintf("consolidationPolicy=%s consolidateAfter=%s budget=%s", sel.Spec.Policy, sel.Spec.After, sel.Spec.Budget)
 		}
 	}
-	out = append(out, section(m.w, m.focus == 1, title, ""))
+	out = append(out, section(m.w, m.focus == 1, title, "enter: pods on node "))
 	lines, _ = renderTable(nc, m.nodes, m.sortBy[1], m.desc[1], m.cur[1], m.off[1], rows[1], m.w, m.focus == 1)
 	out = append(out, lines...)
 	out = append(out, footer)

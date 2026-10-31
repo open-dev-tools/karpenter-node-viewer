@@ -19,7 +19,7 @@ var keys = keyMap{
 	Up:      key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑", "up")),
 	Down:    key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓", "down")),
 	Tab:     key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "pools⇄nodes")),
-	Enter:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "pool→nodes")),
+	Enter:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "pool→nodes · node→pods")),
 	Next:    key.NewBinding(key.WithKeys("right", "l", "c"), key.WithHelp("→", "next ctx")),
 	Prev:    key.NewBinding(key.WithKeys("left", "h", "C"), key.WithHelp("←", "prev ctx")),
 	Sort:    key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sort")),
@@ -27,6 +27,13 @@ var keys = keyMap{
 	All:     key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "all pools")),
 	Refresh: key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh data now")),
 	Help:    key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more")),
-	Esc:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "back to all pools")),
+	Esc:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close · back to all pools")),
 	Quit:    key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
 }
+
+type bindings []key.Binding
+
+func (b bindings) ShortHelp() []key.Binding  { return b }
+func (b bindings) FullHelp() [][]key.Binding { return [][]key.Binding{b} }
+
+var detailKeys = bindings{keys.Up, keys.Down, key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc/q", "close"))}

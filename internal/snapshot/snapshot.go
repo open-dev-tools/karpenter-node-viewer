@@ -30,6 +30,8 @@ type Node struct {
 	Price, Idle                                        float64 // $/h and idle $/month; NaN when the price is unknown
 	Pods                                               int
 	Created                                            time.Time
+
+	live *model.Node
 }
 
 // Pool is one NodePool (or managed node group) in one context.
@@ -191,7 +193,7 @@ func newNode(ctx string, n *model.Node, why map[string]string) *Node {
 		pool = "mng/" + ngSuffix.ReplaceAllString(ng, "")
 	}
 	r := &Node{Ctx: ctx, Name: n.Name(), Pool: or(pool), InstanceType: or(string(n.InstanceType())), Capacity: "?",
-		Pods: n.NumPods(), Created: n.Created(), Price: math.NaN(), Idle: math.NaN()}
+		Pods: n.NumPods(), Created: n.Created(), Price: math.NaN(), Idle: math.NaN(), live: n}
 	r.Why, r.WhyKind = shortWhy(why[n.Name()])
 	switch {
 	case n.IsSpot():
@@ -216,6 +218,22 @@ func newNode(ctx string, n *model.Node, why map[string]string) *Node {
 		r.Idle = r.Price * (1 - math.Min(1, math.Max(r.CPUPct, r.MemPct))) * HoursPerMonth
 	}
 	return r
+}
+
+// Pod is one pod's requests on a node.
+type Pod struct {
+	Namespace, Name string
+	CPU, Mem        float64
+}
+
+// PodList returns the pods on the node now (read live, not from the snapshot).
+func (n *Node) PodList() []Pod {
+	var out []Pod
+	for _, p := range n.live.Pods() {
+		req := p.Requested()
+		out = append(out, Pod{p.Namespace(), p.Name(), res(req, v1.ResourceCPU), res(req, v1.ResourceMemory)})
+	}
+	return out
 }
 
 func res(l v1.ResourceList, name v1.ResourceName) float64 {
