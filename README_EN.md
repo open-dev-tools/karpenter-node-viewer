@@ -2,7 +2,7 @@
 
 Karpenter NodePools across several EKS contexts on one terminal screen — how under-filled they are, how many nodes they actually need, and what is blocking consolidation.
 
-![Go](https://img.shields.io/badge/Go-1.24+-00ADD8)
+![Go](https://img.shields.io/badge/Go-1.26+-00ADD8)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 [한국어](README.md) | **English**
@@ -39,7 +39,7 @@ You need
 
 - AWS CLI v2 and a valid session for the AWS profiles in your kubeconfig
 - EKS contexts created by `aws eks update-kubeconfig`
-- Go 1.24.2 or newer to install from source
+- Go 1.26.10 or newer to install from source
 
 ```sh
 go install github.com/open-dev-tools/karpenter-node-viewer/cmd/knv@latest

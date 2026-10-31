@@ -2,7 +2,7 @@
 
 ## 개발 환경
 
-- Go 1.24.2 이상
+- Go 1.26.10 이상
 - kubeconfig 에 EKS 컨텍스트 하나 이상. 없으면 [kind](https://kind.sigs.k8s.io/) 로 화면만 확인할 수 있다 (가격 · Karpenter 정보는 비어 있다)
 
 ```sh

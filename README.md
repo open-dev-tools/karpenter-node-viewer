@@ -2,7 +2,7 @@
 
 여러 EKS 컨텍스트의 Karpenter NodePool 을 한 터미널 화면에서 본다 — 얼마나 덜 찼는지, 몇 대면 되는지, 무엇이 consolidation 을 막는지.
 
-![Go](https://img.shields.io/badge/Go-1.24+-00ADD8)
+![Go](https://img.shields.io/badge/Go-1.26+-00ADD8)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 **한국어** | [English](README_EN.md)
@@ -39,7 +39,7 @@ knv 는 eks-node-viewer 의 데이터 층(watch · 요청 합산 · 가격)을 �
 
 - `aws` CLI v2 와, kubeconfig 에 적힌 AWS 프로파일의 유효한 세션
 - `aws eks update-kubeconfig` 로 만든 EKS 컨텍스트
-- 소스로 설치할 때 Go 1.24.2 이상
+- 소스로 설치할 때 Go 1.26.10 이상
 
 ```sh
 go install github.com/open-dev-tools/karpenter-node-viewer/cmd/knv@latest
