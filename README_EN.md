@@ -44,9 +44,9 @@ You need
 ```sh
 go install github.com/open-dev-tools/karpenter-node-viewer/cmd/knv@latest
 
-knv                                   # every context that uses aws eks get-token
+knv                                   # every kubeconfig context whose exec command is aws
 knv -context prod-us,staging          # pick some
-knv -kubeconfig ./other.kubeconfig    # default: first entry of $KUBECONFIG or ~/.kube/config
+knv -kubeconfig ./other.kubeconfig    # default: first entry of $KUBECONFIG or ~/.kube/config; trusted files only, their exec commands run
 ```
 
 Build from source: `git clone https://github.com/open-dev-tools/karpenter-node-viewer && cd karpenter-node-viewer && go build -o knv ./cmd/knv`
@@ -76,12 +76,13 @@ The footer shows short help; `?` shows all of it.
 | SAVE≈/MO | (NODES − FIT) × average node price × 730h |
 | IDLE/MO | node price × (1 − max(CPU, MEM)) × 730h |
 | WHY NOT CONSOLIDATED | latest message of Karpenter's `Unconsolidatable` / `DisruptionBlocked` events; the pool table shows the most common reason and how many nodes have it |
-| $ | list price; Savings Plans and RIs are not applied |
+| $ | list price; Savings Plans and RIs are not applied. Fargate nodes show `?` (their size comes from a pod annotation, so it is not trusted) |
 
 ## How it works
 
 - Each context runs eks-node-viewer v0.7.4's `pkg/client` (node, pod and NodeClaim watches), `pkg/model` (request accounting) and `pkg/aws` (on-demand and spot prices)
-- Every 30 seconds knv reads the Karpenter NodePools and the Node events in the `default` namespace
+- Every 30 seconds knv reads the Karpenter NodePools and the Node events in the `default` namespace; only events reported by Karpenter count as blockers
+- A node's pod list is fetched from the API server when you open it
 - Every 30 seconds (or on `r`) that state is frozen into a snapshot and drawn. Cursor, sort and tab changes stay inside the snapshot, so rows do not reorder between refreshes
 
 ## Minimum permissions
@@ -102,8 +103,8 @@ AWS IAM (neither action supports resource-level scoping, hence `"*"`)
 
 | Action | Used for | Without it |
 |---|---|---|
-| `pricing:GetProducts` | on-demand prices | falls back to the static prices built into eks-node-viewer |
-| `ec2:DescribeSpotPriceHistory` | spot prices | spot node prices show `?` |
+| `pricing:GetProducts` | on-demand prices; called with the default AWS credentials (`AWS_PROFILE` or default), not the context's profile | falls back to the static prices built into eks-node-viewer |
+| `ec2:DescribeSpotPriceHistory` | spot prices; called with each context's kubeconfig `AWS_PROFILE` and `--region` | spot node prices show `?` |
 
 To reach EKS the IAM principal must be mapped to the RBAC above, for example through an access entry.
 
@@ -118,7 +119,7 @@ Runtime: AWS CLI v2 (called by the kubeconfig exec). kubectl is not needed.
 | github.com/charmbracelet/bubbles | v0.21.0 | footer help, key bindings |
 | github.com/charmbracelet/lipgloss | v1.1.0 | colors |
 | k8s.io/client-go · api · apimachinery | v0.32.3 | NodePools and events, kubeconfig parsing |
-| github.com/aws/aws-sdk-go-v2/config | v1.29.14 | per-context AWS profile and region |
+| github.com/aws/aws-sdk-go-v2/config | v1.29.14 | per-context AWS profile and region for spot prices |
 | k8s.io/klog/v2 · github.com/go-logr/logr | v2.130.1 · v1.4.2 | discards client-go logs so they do not draw over the TUI |
 
 bubbletea, bubbles, lipgloss and client-go are the versions eks-node-viewer v0.7.4 uses. Full list: [`go.mod`](go.mod).

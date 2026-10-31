@@ -44,9 +44,9 @@ knv 는 eks-node-viewer 의 데이터 층(watch · 요청 합산 · 가격)을 �
 ```sh
 go install github.com/open-dev-tools/karpenter-node-viewer/cmd/knv@latest
 
-knv                                   # aws eks get-token 을 쓰는 컨텍스트 전부
+knv                                   # kubeconfig 에서 exec 명령이 aws 인 컨텍스트 전부
 knv -context prod-us,staging          # 골라서
-knv -kubeconfig ./other.kubeconfig    # 기본값은 $KUBECONFIG 첫 항목 또는 ~/.kube/config
+knv -kubeconfig ./other.kubeconfig    # 기본값은 $KUBECONFIG 첫 항목 또는 ~/.kube/config. 신뢰하는 파일만 — exec 명령이 실행된다
 ```
 
 소스에서 빌드: `git clone https://github.com/open-dev-tools/karpenter-node-viewer && cd karpenter-node-viewer && go build -o knv ./cmd/knv`
@@ -76,12 +76,13 @@ footer 에 짧은 도움말, `?` 로 전체 도움말.
 | SAVE≈/MO | (NODES − FIT) × 평균 노드 가격 × 730h |
 | IDLE/MO | 노드 가격 × (1 − max(CPU, MEM)) × 730h |
 | WHY NOT CONSOLIDATED | Karpenter `Unconsolidatable` · `DisruptionBlocked` 이벤트의 최근 메시지. NodePool 표는 가장 많은 사유와 노드 수 |
-| $ | list price. Savings Plans · RI 미반영 |
+| $ | list price. Savings Plans · RI 미반영. Fargate 노드는 `?` (파드 annotation 으로 정해지는 값이라 쓰지 않는다) |
 
 ## 동작 방식
 
 - 컨텍스트마다 eks-node-viewer v0.7.4 의 `pkg/client`(node · pod · NodeClaim watch) · `pkg/model`(요청 합산) · `pkg/aws`(On-Demand · Spot 가격)를 하나씩 띄운다
-- 30초마다 Karpenter NodePool 과 `default` 네임스페이스의 Node 이벤트를 읽는다
+- 30초마다 Karpenter NodePool 과 `default` 네임스페이스의 Node 이벤트를 읽는다. 차단 사유는 Karpenter 가 보고한 이벤트만 쓴다
+- 노드의 파드 목록은 열 때 API 서버에서 그 노드의 파드를 조회한다
 - 30초마다(또는 `r`) 이 상태를 스냅샷으로 고정해 그린다. 커서 · 정렬 · 탭은 스냅샷 안에서만 움직이므로 갱신 사이에 행 순서가 바뀌지 않는다
 
 ## 최소 권한
@@ -102,8 +103,8 @@ AWS IAM (두 action 모두 resource 수준 제한이 없어 `"*"`)
 
 | action | 쓰는 곳 | 없으면 |
 |---|---|---|
-| `pricing:GetProducts` | On-Demand 가격 | eks-node-viewer 에 내장된 정적 가격을 쓴다 |
-| `ec2:DescribeSpotPriceHistory` | Spot 가격 | Spot 노드 가격이 `?` |
+| `pricing:GetProducts` | On-Demand 가격. 컨텍스트 프로파일이 아니라 기본 AWS 자격증명(`AWS_PROFILE` 또는 default)으로 호출된다 | eks-node-viewer 에 내장된 정적 가격을 쓴다 |
+| `ec2:DescribeSpotPriceHistory` | Spot 가격. 각 컨텍스트의 kubeconfig `AWS_PROFILE` · `--region` 으로 호출된다 | Spot 노드 가격이 `?` |
 
 EKS 에 접근하려면 IAM principal 이 access entry 등으로 위 RBAC 에 매핑돼 있어야 한다.
 
@@ -118,7 +119,7 @@ EKS 에 접근하려면 IAM principal 이 access entry 등으로 위 RBAC 에 �
 | github.com/charmbracelet/bubbles | v0.21.0 | footer 도움말 · 키 바인딩 |
 | github.com/charmbracelet/lipgloss | v1.1.0 | 색 |
 | k8s.io/client-go · api · apimachinery | v0.32.3 | NodePool · 이벤트 조회, kubeconfig 해석 |
-| github.com/aws/aws-sdk-go-v2/config | v1.29.14 | 컨텍스트별 프로파일 · 리전 |
+| github.com/aws/aws-sdk-go-v2/config | v1.29.14 | Spot 가격 조회용 컨텍스트별 프로파일 · 리전 |
 | k8s.io/klog/v2 · github.com/go-logr/logr | v2.130.1 · v1.4.2 | client-go 로그를 버린다 (TUI 깨짐 방지) |
 
 bubbletea · bubbles · lipgloss · client-go 버전은 eks-node-viewer v0.7.4 와 같다. 전체 목록은 [`go.mod`](go.mod).

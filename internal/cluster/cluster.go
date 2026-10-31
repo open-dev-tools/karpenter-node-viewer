@@ -28,7 +28,8 @@ type Target struct {
 }
 
 // Targets reads kubeconfig and returns the contexts to watch, sorted by name.
-// With no names given it picks every context whose user runs `aws eks get-token`;
+// With no names given it picks every context whose user's exec command is `aws` (as written by
+// `aws eks update-kubeconfig`);
 // the AWS profile and region come from that exec block (AWS_PROFILE env, --region arg).
 func Targets(kubeconfig string, only []string) ([]Target, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()

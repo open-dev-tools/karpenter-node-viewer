@@ -28,7 +28,7 @@ func main() {
 	// controller-runtime registers -kubeconfig on the global FlagSet in init, so use our own
 	fs := flag.NewFlagSet("knv", flag.ExitOnError)
 	kubeconfig := fs.String("kubeconfig", kc, "kubeconfig path")
-	contexts := fs.String("context", "", "comma-separated kube contexts (default: every context whose kubeconfig user runs 'aws eks get-token')")
+	contexts := fs.String("context", "", "comma-separated kube contexts (default: every context whose kubeconfig user's exec command is 'aws')")
 	_ = fs.Parse(os.Args[1:])
 
 	var only []string
