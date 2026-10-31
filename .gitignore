@@ -1,0 +1,7 @@
+# build output
+/knv
+/dist/
+
+# go test
+*.test
+*.out
